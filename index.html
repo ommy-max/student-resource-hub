@@ -1,0 +1,2468 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Resource Hub · Academic Workspace</title>
+  <meta name="description" content="Centralized academic workflow platform with study resources repository, Pomodoro focus timer, GPA grade calculator, and assignment Kanban planner." />
+  <meta property="og:title" content="Student Resource Hub · Academic Workspace" />
+  <meta property="og:description" content="Manage study materials, track assignments with Kanban, calculate GPA, and master focus with Pomodoro timer." />
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+              950: '#1e1b4b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* Base CSS styles & smooth animations */
+    * {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    html {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+    
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.4);
+      border-radius: 9999px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: rgba(71, 85, 105, 0.5);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, 0.7);
+    }
+
+    /* Timer Circular Progress SVG */
+    .timer-ring-circle {
+      transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+
+    /* Kanban Drag & Drop indicators */
+    .kanban-col.drag-over {
+      background-color: rgba(99, 102, 241, 0.08);
+      border-style: dashed;
+    }
+    .kanban-card.is-dragging {
+      opacity: 0.4;
+      transform: scale(0.98);
+    }
+
+    /* Toast animation */
+    @keyframes toastSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    .toast-animate {
+      animation: toastSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Modal Backdrop Transitions */
+    .modal-backdrop {
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(4px);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white transition-colors duration-200">
+
+  <!-- APP SHELL -->
+  <div class="flex h-screen overflow-hidden">
+    
+    <!-- MOBILE SIDEBAR OVERLAY -->
+    <div id="mobileSidebarBackdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs hidden lg:hidden transition-opacity"></div>
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transform -translate-x-full lg:translate-x-0 transition-transform duration-250 ease-in-out lg:static lg:z-auto">
+      
+      <!-- Top Brand Header -->
+      <div class="flex flex-col">
+        <div class="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-slate-800">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20">
+              <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <span class="font-bold text-base tracking-tight text-slate-900 dark:text-white">ScholarHub</span>
+              <span class="block text-[11px] font-medium text-slate-400 dark:text-slate-400">Academic Workspace</span>
+            </div>
+          </div>
+          <button onclick="toggleMobileSidebar()" class="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close menu">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Academic Term Banner -->
+        <div class="px-6 py-3 bg-slate-50 dark:bg-slate-800/40 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-500"></i>
+            <span class="font-medium">Fall 2026</span>
+          </div>
+          <span class="text-slate-400 dark:text-slate-400 font-mono text-[11px]">Week 9 / 15</span>
+        </div>
+
+        <!-- Main Navigation Links -->
+        <nav class="p-4 space-y-1">
+          <button onclick="switchTab('repository')" id="nav-repository" class="nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
+            <div class="flex items-center gap-3">
+              <i data-lucide="folder-git-2" class="w-4 h-4"></i>
+              <span>Resource Repository</span>
+            </div>
+            <span id="badge-resource-count" class="text-xs px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-mono font-medium">10</span>
+          </button>
+
+          <button onclick="switchTab('planner')" id="nav-planner" class="nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70">
+            <div class="flex items-center gap-3">
+              <i data-lucide="kanban-square" class="w-4 h-4"></i>
+              <span>Assignment Kanban</span>
+            </div>
+            <span id="badge-tasks-count" class="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono font-medium">6</span>
+          </button>
+
+          <button onclick="switchTab('timer')" id="nav-timer" class="nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70">
+            <div class="flex items-center gap-3">
+              <i data-lucide="timer" class="w-4 h-4"></i>
+              <span>Pomodoro Focus</span>
+            </div>
+            <span id="badge-timer-status" class="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-medium">25:00</span>
+          </button>
+
+          <button onclick="switchTab('gpa')" id="nav-gpa" class="nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70">
+            <div class="flex items-center gap-3">
+              <i data-lucide="calculator" class="w-4 h-4"></i>
+              <span>GPA Calculator</span>
+            </div>
+            <span id="badge-gpa-val" class="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-semibold">3.88</span>
+          </button>
+
+          <button onclick="filterByBookmarks()" id="nav-bookmarks" class="nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70">
+            <div class="flex items-center gap-3">
+              <i data-lucide="bookmark" class="w-4 h-4"></i>
+              <span>Saved Bookmarks</span>
+            </div>
+            <span id="badge-bookmark-count" class="text-xs px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 font-mono font-medium">0</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Bottom Profile & Controls -->
+      <div class="p-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+        <!-- Quick Daily Focus Progress -->
+        <div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/70 dark:border-slate-800">
+          <div class="flex items-center justify-between text-xs mb-1.5">
+            <span class="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5">
+              <i data-lucide="flame" class="w-3.5 h-3.5 text-amber-500"></i>
+              Daily Focus Target
+            </span>
+            <span id="sidebar-focus-stats" class="font-mono text-slate-700 dark:text-slate-300 font-semibold">2 / 4</span>
+          </div>
+          <div class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div id="sidebar-focus-bar" class="h-full bg-indigo-600 dark:bg-indigo-500 rounded-full transition-all duration-300" style="width: 50%"></div>
+          </div>
+        </div>
+
+        <!-- Student Profile Card & Theme Toggle -->
+        <div class="flex items-center justify-between pt-1">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-slate-200">
+              AC
+            </div>
+            <div class="leading-tight">
+              <span class="block text-xs font-semibold text-slate-800 dark:text-slate-200">Alex Chen</span>
+              <span class="block text-[11px] text-slate-400">CS & Math '27</span>
+            </div>
+          </div>
+
+          <!-- Dark/Light Mode Button -->
+          <button onclick="toggleTheme()" class="p-2 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Toggle Theme (Dark/Light)">
+            <i id="theme-icon" data-lucide="moon" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN VIEWPORT WRAPPER -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+      
+      <!-- TOP HEADER BAR -->
+      <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sm:px-6 z-30 shrink-0">
+        
+        <!-- Left: Mobile Menu + Breadcrumb -->
+        <div class="flex items-center gap-3">
+          <button onclick="toggleMobileSidebar()" class="lg:hidden p-2 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Open menu">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+          <div>
+            <h1 id="page-title" class="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">Resource Repository</h1>
+            <p id="page-subtitle" class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Search, preview, and download verified study materials</p>
+          </div>
+        </div>
+
+        <!-- Right: Global Search & Quick Actions -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          
+          <!-- Quick Search input -->
+          <div class="relative w-40 sm:w-64">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+            <input type="text" id="global-search" oninput="handleGlobalSearch(this.value)" placeholder="Search resources, topics..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800/80 border border-transparent focus:border-indigo-500 dark:focus:border-indigo-500 rounded-lg text-slate-800 dark:text-slate-200 placeholder-slate-400 outline-none transition-all">
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <button onclick="openUploadModal()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs shadow-indigo-600/30 transition-colors whitespace-nowrap">
+            <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Upload Resource</span>
+            <span class="sm:hidden">Upload</span>
+          </button>
+
+          <button onclick="openNewTaskModal()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 transition-colors whitespace-nowrap">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Add Task</span>
+            <span class="sm:hidden">Task</span>
+          </button>
+
+        </div>
+      </header>
+
+      <!-- SCROLLABLE TAB CONTENT VIEWS -->
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-50 dark:bg-slate-950">
+        
+        <!-- ========================================== -->
+        <!-- VIEW 1: RESOURCE REPOSITORY -->
+        <!-- ========================================== -->
+        <section id="view-repository" class="tab-view max-w-7xl mx-auto space-y-6">
+          
+          <!-- Category & Subject Filtering Deck -->
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-5 shadow-xs space-y-4">
+            
+            <!-- Category Tabs (Segmented Button Group) -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/80 pb-4">
+              <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs no-scrollbar">
+                <button onclick="setCategoryFilter('All')" class="cat-pill active px-3 py-1.5 rounded-lg font-medium transition-colors bg-indigo-600 text-white whitespace-nowrap">All Formats</button>
+                <button onclick="setCategoryFilter('Lecture Notes')" class="cat-pill px-3 py-1.5 rounded-lg font-medium transition-colors text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">Lecture Notes</button>
+                <button onclick="setCategoryFilter('Past Exam Papers')" class="cat-pill px-3 py-1.5 rounded-lg font-medium transition-colors text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">Past Exams</button>
+                <button onclick="setCategoryFilter('Study Guides')" class="cat-pill px-3 py-1.5 rounded-lg font-medium transition-colors text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">Study Guides</button>
+                <button onclick="setCategoryFilter('Code Repositories')" class="cat-pill px-3 py-1.5 rounded-lg font-medium transition-colors text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">Code Repos</button>
+                <button onclick="setCategoryFilter('Project Templates')" class="cat-pill px-3 py-1.5 rounded-lg font-medium transition-colors text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">Project Templates</button>
+              </div>
+
+              <!-- Sort & Filter info -->
+              <div class="flex items-center gap-3 shrink-0 self-end sm:self-auto text-xs">
+                <span class="text-slate-400">Sort by:</span>
+                <select id="sort-select" onchange="renderResources()" class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg px-2.5 py-1 text-xs outline-none">
+                  <option value="newest">Latest Uploads</option>
+                  <option value="popular">Most Downloaded</option>
+                  <option value="title">Alphabetical (A-Z)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Subject Area Filter Controls -->
+            <div class="flex flex-wrap items-center gap-2 pt-1 text-xs">
+              <span class="text-slate-400 font-medium mr-1 text-[11px] uppercase tracking-wider">Subject:</span>
+              <button onclick="setSubjectFilter('All')" class="subj-pill active px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900 text-white dark:bg-white dark:text-slate-900 transition-colors">All</button>
+              <button onclick="setSubjectFilter('Computer Science')" class="subj-pill px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors">Computer Science</button>
+              <button onclick="setSubjectFilter('Mathematics')" class="subj-pill px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors">Mathematics</button>
+              <button onclick="setSubjectFilter('Physics')" class="subj-pill px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors">Physics</button>
+              <button onclick="setSubjectFilter('Literature')" class="subj-pill px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors">Literature</button>
+              <button onclick="setSubjectFilter('Data Science & AI')" class="subj-pill px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors">Data Science & AI</button>
+
+              <div class="ml-auto flex items-center gap-2">
+                <button onclick="toggleBookmarkFilter()" id="btn-toggle-bookmarks-only" class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                  <i data-lucide="bookmark" class="w-3.5 h-3.5 text-amber-500"></i>
+                  <span>Bookmarked Only</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Dynamic Resource Cards Grid -->
+          <div id="resource-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <!-- Rendered by JavaScript -->
+          </div>
+
+          <!-- Empty State -->
+          <div id="resource-empty-state" class="hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center max-w-md mx-auto space-y-3">
+            <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+              <i data-lucide="file-question" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-base font-semibold text-slate-800 dark:text-slate-200">No resources found</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Try adjusting your search criteria, subject filter, or upload your own notes to get started.</p>
+            <button onclick="resetFilters()" class="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">
+              Reset Filters
+            </button>
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 2: POMODORO FOCUS TIMER -->
+        <!-- ========================================== -->
+        <section id="view-timer" class="tab-view hidden max-w-4xl mx-auto space-y-6">
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- Main Timer Center Card (Col span 2) -->
+            <div class="md:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center shadow-xs relative">
+              
+              <!-- Session Mode Badges -->
+              <div class="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl text-xs font-medium mb-8">
+                <button onclick="setTimerMode('study')" id="tmode-study" class="px-4 py-1.5 rounded-lg transition-all bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs">
+                  Study (25m)
+                </button>
+                <button onclick="setTimerMode('shortBreak')" id="tmode-shortBreak" class="px-4 py-1.5 rounded-lg transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
+                  Short Break (5m)
+                </button>
+                <button onclick="setTimerMode('longBreak')" id="tmode-longBreak" class="px-4 py-1.5 rounded-lg transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
+                  Long Break (15m)
+                </button>
+              </div>
+
+              <!-- Animated Circular Countdown -->
+              <div class="relative w-64 h-64 flex items-center justify-center my-2">
+                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                  <!-- Background Track -->
+                  <circle cx="50" cy="50" r="44" stroke="currentColor" stroke-width="5" class="text-slate-100 dark:text-slate-800 fill-none" />
+                  <!-- Dynamic Progress Circle -->
+                  <circle id="timer-progress-circle" cx="50" cy="50" r="44" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="text-indigo-600 dark:text-indigo-500 fill-none timer-ring-circle" stroke-dasharray="276.46" stroke-dashoffset="0" />
+                </svg>
+
+                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span id="timer-display" class="font-mono text-5xl sm:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white tabular-nums">25:00</span>
+                  <span id="timer-mode-label" class="mt-2 text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Deep Work</span>
+                </div>
+              </div>
+
+              <!-- Timer Controls -->
+              <div class="flex items-center gap-4 mt-8">
+                <button onclick="toggleTimer()" id="btn-timer-toggle" class="px-8 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow-md shadow-indigo-600/30 flex items-center gap-2 transition-transform active:scale-95">
+                  <i id="btn-timer-toggle-icon" data-lucide="play" class="w-4 h-4 fill-white"></i>
+                  <span id="btn-timer-toggle-text">Start Focus</span>
+                </button>
+
+                <button onclick="resetTimer()" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" title="Reset Timer">
+                  <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                </button>
+
+                <button onclick="skipTimerMode()" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" title="Skip to next session">
+                  <i data-lucide="skip-forward" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <!-- Quick Focus Task Input -->
+              <div class="w-full max-w-sm mt-8 pt-6 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-2">
+                <i data-lucide="target" class="w-4 h-4 text-indigo-500 shrink-0"></i>
+                <input type="text" id="timer-current-task" placeholder="What are you focusing on right now?" class="w-full text-xs bg-transparent border-b border-slate-200 dark:border-slate-700 focus:border-indigo-500 py-1 text-slate-700 dark:text-slate-300 placeholder-slate-400 outline-none">
+              </div>
+
+            </div>
+
+            <!-- Timer Stats & Settings Sidebar -->
+            <div class="space-y-4">
+              
+              <!-- Session Metrics -->
+              <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <i data-lucide="bar-chart-2" class="w-4 h-4 text-indigo-500"></i>
+                  Today's Productivity
+                </h3>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <span class="block text-[11px] text-slate-400 font-medium">Completed</span>
+                    <span id="stat-sessions-count" class="font-mono text-2xl font-bold text-slate-900 dark:text-white tabular-nums">2</span>
+                    <span class="text-[10px] text-slate-400">sessions</span>
+                  </div>
+                  <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <span class="block text-[11px] text-slate-400 font-medium">Focus Time</span>
+                    <span id="stat-focus-minutes" class="font-mono text-2xl font-bold text-slate-900 dark:text-white tabular-nums">50</span>
+                    <span class="text-[10px] text-slate-400">minutes</span>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between text-xs pt-1 text-slate-600 dark:text-slate-300">
+                  <span class="flex items-center gap-1.5">
+                    <i data-lucide="award" class="w-4 h-4 text-amber-500"></i>
+                    Study Streak
+                  </span>
+                  <span class="font-mono font-bold text-slate-900 dark:text-white">5 Days</span>
+                </div>
+              </div>
+
+              <!-- Custom Durations Customizer -->
+              <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-3">
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Custom Durations</h4>
+                <div class="space-y-2 text-xs">
+                  <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Study Duration:</span>
+                    <input type="number" id="custom-study-min" min="1" max="90" value="25" onchange="updateCustomTimes()" class="w-16 px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-mono text-xs">
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Short Break:</span>
+                    <input type="number" id="custom-short-min" min="1" max="30" value="5" onchange="updateCustomTimes()" class="w-16 px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-mono text-xs">
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Long Break:</span>
+                    <input type="number" id="custom-long-min" min="1" max="60" value="15" onchange="updateCustomTimes()" class="w-16 px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-mono text-xs">
+                  </div>
+                </div>
+                <div class="pt-2">
+                  <button onclick="testChimeSound()" class="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-medium transition-colors">
+                    <i data-lucide="bell" class="w-3.5 h-3.5 text-indigo-500"></i>
+                    Test Audio Chime
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 3: GPA & GRADE CALCULATOR -->
+        <!-- ========================================== -->
+        <section id="view-gpa" class="tab-view hidden max-w-5xl mx-auto space-y-6">
+          
+          <!-- Top KPI Ribbon -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex items-center justify-between">
+              <div>
+                <span class="block text-xs font-medium text-slate-400">Cumulative GPA</span>
+                <span id="gpa-summary-val" class="font-mono text-3xl font-extrabold text-indigo-600 dark:text-indigo-400 tabular-nums">3.88</span>
+                <span id="gpa-standing-label" class="inline-block mt-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">Summa Cum Laude</span>
+              </div>
+              <div class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <i data-lucide="award" class="w-6 h-6"></i>
+              </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex items-center justify-between">
+              <div>
+                <span class="block text-xs font-medium text-slate-400">Total Credit Hours</span>
+                <span id="gpa-total-credits" class="font-mono text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums">16.0</span>
+                <span class="inline-block mt-1 text-[11px] text-slate-500">Current Semester</span>
+              </div>
+              <div class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+                <i data-lucide="book-open" class="w-6 h-6"></i>
+              </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex items-center justify-between">
+              <div>
+                <span class="block text-xs font-medium text-slate-400">Total Quality Points</span>
+                <span id="gpa-total-points" class="font-mono text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums">62.0</span>
+                <span class="inline-block mt-1 text-[11px] text-slate-500">Credits × Grade Scale</span>
+              </div>
+              <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <i data-lucide="trending-up" class="w-6 h-6"></i>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Multi-Course Table & Target Planner -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Courses Table (2 cols) -->
+            <div class="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-base font-bold text-slate-900 dark:text-white">Active Courses & Grades</h3>
+                  <p class="text-xs text-slate-500">Add or edit courses to calculate your term GPA in real time.</p>
+                </div>
+                <button onclick="addCourseRow()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-colors">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                  Add Course
+                </button>
+              </div>
+
+              <!-- Table -->
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead>
+                    <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase text-[10px] tracking-wider">
+                      <th class="py-2.5 px-2">Course Name</th>
+                      <th class="py-2.5 px-2 w-28">Credits</th>
+                      <th class="py-2.5 px-2 w-32">Letter Grade</th>
+                      <th class="py-2.5 px-2 w-20 text-right">Points</th>
+                      <th class="py-2.5 px-2 w-10 text-center"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="gpa-table-body" class="divide-y divide-slate-100 dark:divide-slate-800/80">
+                    <!-- Rendered by JS -->
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
+                <button onclick="resetGpaCourses()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                  Reset to default courses
+                </button>
+                <div class="font-mono text-slate-600 dark:text-slate-400">
+                  Formula: <span class="text-indigo-600 dark:text-indigo-400 font-semibold">Σ(Credits × Grade) / Σ(Credits)</span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Target GPA Planner & Scale Reference (1 col) -->
+            <div class="space-y-4">
+              
+              <!-- Target GPA Calculator -->
+              <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <i data-lucide="crosshair" class="w-4 h-4 text-indigo-500"></i>
+                  Target GPA Forecast
+                </h4>
+
+                <div class="space-y-3 text-xs">
+                  <div>
+                    <label class="block text-slate-500 dark:text-slate-400 mb-1">Target Desired GPA:</label>
+                    <input type="number" id="target-desired-gpa" step="0.05" min="2.0" max="4.0" value="3.90" oninput="calculateTargetForecast()" class="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 font-mono text-xs">
+                  </div>
+                  <div>
+                    <label class="block text-slate-500 dark:text-slate-400 mb-1">Upcoming Semester Credits:</label>
+                    <input type="number" id="target-future-credits" min="1" max="24" value="15" oninput="calculateTargetForecast()" class="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 font-mono text-xs">
+                  </div>
+
+                  <div class="p-3 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl border border-indigo-100 dark:border-indigo-900/50 mt-2">
+                    <span class="block text-[11px] text-slate-500 dark:text-slate-400">Required Term GPA:</span>
+                    <span id="target-required-gpa-val" class="font-mono text-2xl font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">3.92</span>
+                    <p id="target-forecast-note" class="text-[11px] text-slate-500 mt-1">Average grade of A / A- needed across all future courses.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Standard 4.0 Grade Scale Reference -->
+              <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-2">
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Standard 4.0 Scale</h4>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                  <div class="flex justify-between"><span>A / A+</span> <span class="font-semibold text-slate-800 dark:text-slate-200">4.00</span></div>
+                  <div class="flex justify-between"><span>A-</span> <span class="font-semibold text-slate-800 dark:text-slate-200">3.70</span></div>
+                  <div class="flex justify-between"><span>B+</span> <span class="font-semibold text-slate-800 dark:text-slate-200">3.30</span></div>
+                  <div class="flex justify-between"><span>B</span> <span class="font-semibold text-slate-800 dark:text-slate-200">3.00</span></div>
+                  <div class="flex justify-between"><span>B-</span> <span class="font-semibold text-slate-800 dark:text-slate-200">2.70</span></div>
+                  <div class="flex justify-between"><span>C+</span> <span class="font-semibold text-slate-800 dark:text-slate-200">2.30</span></div>
+                  <div class="flex justify-between"><span>C</span> <span class="font-semibold text-slate-800 dark:text-slate-200">2.00</span></div>
+                  <div class="flex justify-between"><span>F</span> <span class="font-semibold text-rose-500">0.00</span></div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 4: ASSIGNMENT KANBAN PLANNER -->
+        <!-- ========================================== -->
+        <section id="view-planner" class="tab-view hidden max-w-7xl mx-auto space-y-6">
+          
+          <!-- Progress & Kanban Toolbar -->
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
+            
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Assignment & Milestone Tracker</h3>
+                <p class="text-xs text-slate-500">Drag cards between columns or use the quick controls to manage submission deadlines.</p>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <button onclick="openNewTaskModal()" class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-colors">
+                  <i data-lucide="plus" class="w-4 h-4"></i>
+                  New Assignment
+                </button>
+              </div>
+            </div>
+
+            <!-- Live Progress Bar -->
+            <div class="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-medium text-slate-700 dark:text-slate-300">Semester Assignment Progress</span>
+                <span id="kanban-progress-text" class="font-mono font-semibold text-indigo-600 dark:text-indigo-400">3 of 6 completed (50%)</span>
+              </div>
+              <div class="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div id="kanban-progress-bar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-300" style="width: 50%"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- 3-Column Kanban Board -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            
+            <!-- Column 1: To Do -->
+            <div class="kanban-col bg-slate-100/70 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col min-h-[460px] transition-colors" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event, 'todo')">
+              <div class="flex items-center justify-between mb-3 px-1">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">To Do</h4>
+                </div>
+                <span id="col-count-todo" class="text-xs font-mono font-semibold px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 shadow-2xs">0</span>
+              </div>
+              
+              <div id="col-tasks-todo" class="space-y-3 flex-1">
+                <!-- Rendered by JS -->
+              </div>
+            </div>
+
+            <!-- Column 2: In Progress -->
+            <div class="kanban-col bg-slate-100/70 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col min-h-[460px] transition-colors" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event, 'in_progress')">
+              <div class="flex items-center justify-between mb-3 px-1">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">In Progress</h4>
+                </div>
+                <span id="col-count-in_progress" class="text-xs font-mono font-semibold px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 shadow-2xs">0</span>
+              </div>
+
+              <div id="col-tasks-in_progress" class="space-y-3 flex-1">
+                <!-- Rendered by JS -->
+              </div>
+            </div>
+
+            <!-- Column 3: Completed -->
+            <div class="kanban-col bg-slate-100/70 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col min-h-[460px] transition-colors" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event, 'completed')">
+              <div class="flex items-center justify-between mb-3 px-1">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Completed</h4>
+                </div>
+                <span id="col-count-completed" class="text-xs font-mono font-semibold px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 shadow-2xs">0</span>
+              </div>
+
+              <div id="col-tasks-completed" class="space-y-3 flex-1">
+                <!-- Rendered by JS -->
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+      </main>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL 1: RESOURCE PREVIEW VIEWER -->
+  <!-- ========================================== -->
+  <div id="modal-preview" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div onclick="closePreviewModal()" class="fixed inset-0 modal-backdrop"></div>
+    <div class="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[88vh] z-10">
+      
+      <!-- Preview Header -->
+      <div class="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/60">
+        <div class="flex items-center gap-3">
+          <div id="preview-icon-container" class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <i data-lucide="file-text" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 id="preview-title" class="text-base font-bold text-slate-900 dark:text-white leading-tight">Document Title</h3>
+            <div id="preview-meta" class="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+              <span>CS 229</span> · <span>Lecture Notes</span> · <span>PDF (4.2 MB)</span>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="closePreviewModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Preview Simulated Document Body -->
+      <div class="p-6 overflow-y-auto space-y-6 flex-1 text-sm bg-white dark:bg-slate-900">
+        
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 text-xs text-slate-400">
+          <span class="flex items-center gap-1.5 font-medium">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i> Verified Course Material
+          </span>
+          <span class="font-mono">Page 1 of 8</span>
+        </div>
+
+        <div id="preview-content-box" class="space-y-4 text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Sample Code or Outline Block -->
+        <div id="preview-code-box" class="p-4 rounded-xl bg-slate-900 text-slate-200 font-mono text-xs overflow-x-auto border border-slate-800">
+          <pre><code>// Sample preview excerpt
+import numpy as np
+def attention(Q, K, V, d_k):
+    scores = np.matmul(Q, K.T) / np.sqrt(d_k)
+    weights = softmax(scores, axis=-1)
+    return np.matmul(weights, V)</code></pre>
+        </div>
+
+      </div>
+
+      <!-- Preview Footer Actions -->
+      <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/60">
+        <div class="flex items-center gap-2">
+          <button id="preview-btn-bookmark" onclick="toggleBookmarkFromPreview()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 text-xs font-medium transition-colors">
+            <i data-lucide="bookmark" class="w-4 h-4"></i>
+            <span>Bookmark</span>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="closePreviewModal()" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors">
+            Close
+          </button>
+          <button id="preview-btn-download" onclick="downloadCurrentPreviewResource()" class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-colors">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            Download Full Document
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL 2: UPLOAD RESOURCE SIMULATOR -->
+  <!-- ========================================== -->
+  <div id="modal-upload" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div onclick="closeUploadModal()" class="fixed inset-0 modal-backdrop"></div>
+    <div class="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl z-10 flex flex-col max-h-[90vh]">
+      
+      <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">Upload Academic Material</h3>
+          <p class="text-xs text-slate-500">Share lecture notes, exams, or code templates with fellow students.</p>
+        </div>
+        <button onclick="closeUploadModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="upload-form" onsubmit="handleUploadSubmit(event)" class="p-6 space-y-4 overflow-y-auto">
+        
+        <!-- Drag & Drop Zone -->
+        <div id="drop-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDropFile(event)" class="border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-500 rounded-xl p-6 text-center cursor-pointer transition-colors bg-slate-50 dark:bg-slate-800/30">
+          <input type="file" id="file-input" class="hidden" onchange="handleFileSelect(event)">
+          <div class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-2">
+            <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+          </div>
+          <span id="drop-zone-text" class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+            Click to upload or drag & drop files here
+          </span>
+          <span id="drop-zone-subtext" class="block text-[11px] text-slate-400 mt-1">
+            PDF, DOCX, ZIP, IPYNB, or MD (up to 50 MB)
+          </span>
+        </div>
+
+        <div class="space-y-3 text-xs">
+          <div>
+            <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Resource Title *</label>
+            <input type="text" id="up-title" required placeholder="e.g., CS 161 Algorithms Midterm Study Guide" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Subject Area *</label>
+              <select id="up-subject" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500">
+                <option value="Computer Science">Computer Science</option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="Physics">Physics</option>
+                <option value="Literature">Literature</option>
+                <option value="Data Science & AI">Data Science & AI</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Category Type *</label>
+              <select id="up-category" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500">
+                <option value="Lecture Notes">Lecture Notes</option>
+                <option value="Past Exam Papers">Past Exam Papers</option>
+                <option value="Study Guides">Study Guides</option>
+                <option value="Code Repositories">Code Repositories</option>
+                <option value="Project Templates">Project Templates</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Course Code *</label>
+              <input type="text" id="up-course" required placeholder="e.g., CS 161" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Term / Semester</label>
+              <input type="text" id="up-term" placeholder="e.g., Fall 2026" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Topic Tags (comma separated)</label>
+            <input type="text" id="up-tags" placeholder="e.g., dynamic-programming, greedy, graphs" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500">
+          </div>
+
+          <div>
+            <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
+            <textarea id="up-desc" rows="3" placeholder="Brief outline of contents, professor name, or exam year..." class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500"></textarea>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+          <button type="button" onclick="closeUploadModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-xs transition-colors">
+            Publish Resource
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL 3: ADD NEW TASK / ASSIGNMENT -->
+  <!-- ========================================== -->
+  <div id="modal-task" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div onclick="closeNewTaskModal()" class="fixed inset-0 modal-backdrop"></div>
+    <div class="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl z-10 flex flex-col">
+      
+      <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">Add Assignment Task</h3>
+          <p class="text-xs text-slate-500">Track deadlines, problem sets, and readings.</p>
+        </div>
+        <button onclick="closeNewTaskModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="task-form" onsubmit="handleNewTaskSubmit(event)" class="p-6 space-y-4 text-xs">
+        <div>
+          <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Task Title *</label>
+          <input type="text" id="task-input-title" required placeholder="e.g., Problem Set 4: Graph Search" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Course Code *</label>
+            <input type="text" id="task-input-course" required placeholder="e.g., CS 161" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Priority Level</label>
+            <select id="task-input-priority" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500">
+              <option value="High">High Priority</option>
+              <option value="Medium" selected>Medium Priority</option>
+              <option value="Low">Low Priority</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Due Date</label>
+            <input type="date" id="task-input-date" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Initial Status</label>
+            <select id="task-input-status" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500">
+              <option value="todo" selected>To Do</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Notes / Instructions</label>
+          <textarea id="task-input-notes" rows="2" placeholder="Submission link, partner details, chapter sections..." class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+          <button type="button" onclick="closeNewTaskModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-xs transition-colors">
+            Add Assignment
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- FLOATING TOAST CONTAINER -->
+  <!-- ========================================== -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full"></div>
+
+  <!-- ========================================== -->
+  <!-- CORE JAVASCRIPT APPLICATION LOGIC -->
+  <!-- ========================================== -->
+  <script>
+    /* =========================================================================
+       1. INITIAL MOCK ACADEMIC DATA & STATE MANAGEMENT
+       ========================================================================= */
+
+    const INITIAL_RESOURCES = [
+      {
+        id: 'res-1',
+        title: 'Deep Learning & Transformer Foundations',
+        subject: 'Computer Science',
+        category: 'Lecture Notes',
+        course: 'CS 229',
+        term: 'Fall 2026',
+        format: 'PDF',
+        size: '4.8 MB',
+        downloads: 482,
+        tags: ['neural-networks', 'attention', 'transformers', 'backprop'],
+        description: 'Complete annotated lecture notes covering self-attention math, multi-head projections, layer normalization, and gradient derivation proofs.',
+        author: 'Prof. Andrew Ng / TAs',
+        previewExcerpt: 'The Transformer model architecture relies entirely on an attention mechanism to draw global dependencies between input and output without using sequence-aligned RNNs or convolution. The Multi-Head Attention equations compute attention weights via scaled dot-product: Attention(Q,K,V) = softmax(QK^T / sqrt(d_k))V.'
+      },
+      {
+        id: 'res-2',
+        title: 'Multivariable Calculus Final Exam (2025) with Solutions',
+        subject: 'Mathematics',
+        category: 'Past Exam Papers',
+        course: 'MATH 301',
+        term: 'Spring 2025',
+        format: 'PDF',
+        size: '2.4 MB',
+        downloads: 819,
+        tags: ['greens-theorem', 'stokes-theorem', 'surface-integrals', 'divergence'],
+        description: 'Full 3-hour midterm and final exams with step-by-step verified grading rubrics, parametric surface sketches, and common trap alerts.',
+        author: 'Department of Mathematics',
+        previewExcerpt: 'Problem 4 [25 points]: Let S be the portion of the paraboloid z = 4 - x^2 - y^2 lying above the xy-plane, oriented with upward unit normal vector n. Using Stokes Theorem, compute the line integral along the boundary circle C of F(x,y,z) = (y, -x, z^2).'
+      },
+      {
+        id: 'res-3',
+        title: 'Algorithms & Dynamic Programming Master Cheatsheet',
+        subject: 'Computer Science',
+        category: 'Study Guides',
+        course: 'CS 161',
+        term: 'Fall 2026',
+        format: 'MD',
+        size: '1.2 MB',
+        downloads: 641,
+        tags: ['dijkstra', 'dp-knapsack', 'graph-theory', 'time-complexity'],
+        description: 'Condensed asymptotic reference guide featuring standard recurrence trees, 2D memoization templates, Bellman-Ford, and flow networks.',
+        author: 'Stanford Algorithms Review Board',
+        previewExcerpt: 'Dynamic Programming Recipes: 1. State definition: dp[i][w] = maximum value achieved using items 1..i with capacity w. 2. Transition: dp[i][w] = max(dp[i-1][w], dp[i-1][w-weight[i]] + value[i]). 3. Base case: dp[0][w] = 0. Time Complexity: O(N * W).'
+      },
+      {
+        id: 'res-4',
+        title: 'Distributed Systems Raft Consensus Starter Code',
+        subject: 'Computer Science',
+        category: 'Code Repositories',
+        course: 'CS 244B',
+        term: 'Fall 2026',
+        format: 'ZIP',
+        size: '8.6 MB',
+        downloads: 320,
+        tags: ['raft', 'golang', 'distributed-systems', 'rpc', 'heartbeat'],
+        description: 'Clean Go scaffolding with RPC harness, leader election timeout simulations, log replication stubs, and unit test pass runners.',
+        author: 'Distributed Lab Group',
+        previewExcerpt: 'package raft\n\ntype Raft struct {\n    peers     []*labrpc.ClientEnd\n    me        int\n    currentTerm int\n    votedFor    int\n    log         []LogEntry\n    state       NodeState // Leader, Candidate, Follower\n}'
+      },
+      {
+        id: 'res-5',
+        title: 'Quantum Mechanics: Wave Equations & Hilbert Space Reference',
+        subject: 'Physics',
+        category: 'Study Guides',
+        course: 'PHYS 210',
+        term: 'Fall 2026',
+        format: 'PDF',
+        size: '3.1 MB',
+        downloads: 295,
+        tags: ['schrodinger', 'bra-ket', 'spin-matrices', 'harmonic-oscillator'],
+        description: 'Comprehensive derivation guide for the 1D infinite well, ladder operator algebra in quantum harmonic oscillators, and Dirac notation.',
+        author: 'Dr. Leonard Susskind / Dept.',
+        previewExcerpt: 'Postulates of Quantum Mechanics: Any state of a physical system is represented by a normalized ray in Hilbert space |psi>. Observables are Hermitian operators A = A^dagger whose eigenvalues represent real measurement values.'
+      },
+      {
+        id: 'res-6',
+        title: 'Modernist Poetry & 20th Century Critical Essay Guide',
+        subject: 'Literature',
+        category: 'Study Guides',
+        course: 'LIT 142',
+        term: 'Fall 2026',
+        format: 'DOCX',
+        size: '850 KB',
+        downloads: 184,
+        tags: ['eliot', 'woolf', 'stream-of-consciousness', 'modernism'],
+        description: 'Close-reading methodologies, thematic essay outlines, primary citations, and analysis of "The Waste Land" and fragmented narrative structures.',
+        author: 'Prof. Helen Vendler Archives',
+        previewExcerpt: 'Modernist fragmentation operates not as mere stylistic novelty, but as a direct psychological response to industrial estrangement and post-war disruption. Note the juxtaposition of classical myth against urban alienation.'
+      },
+      {
+        id: 'res-7',
+        title: 'Bayesian Inference & PyMC MCMC Simulation Sandbox',
+        subject: 'Data Science & AI',
+        category: 'Lecture Notes',
+        course: 'STATS 270',
+        term: 'Fall 2026',
+        format: 'IPYNB',
+        size: '5.2 MB',
+        downloads: 412,
+        tags: ['bayesian', 'mcmc', 'pymc', 'posterior-sampling'],
+        description: 'Hands-on computational notebook exploring Markov Chain Monte Carlo, Metropolis-Hastings transitions, and hierarchical priors.',
+        author: 'Statistical Inference Lab',
+        previewExcerpt: 'with pm.Model() as hierarchical_model:\n    mu = pm.Normal("mu", mu=0, sigma=10)\n    sigma = pm.HalfNormal("sigma", sigma=5)\n    y_obs = pm.Normal("y_obs", mu=mu, sigma=sigma, observed=data)\n    trace = pm.sample(2000, return_inferencedata=True)'
+      },
+      {
+        id: 'res-8',
+        title: 'Linear Algebra: Eigenvalues & Singular Value Decomposition (SVD)',
+        subject: 'Mathematics',
+        category: 'Past Exam Papers',
+        course: 'MATH 220',
+        term: 'Fall 2025',
+        format: 'PDF',
+        size: '1.9 MB',
+        downloads: 530,
+        tags: ['svd', 'pca', 'eigenvectors', 'diagonalization'],
+        description: 'Midterm problems focusing on geometric interpretation of SVD, low-rank matrix approximations, and principal component analysis.',
+        author: 'Prof. Gilbert Strang / TAs',
+        previewExcerpt: 'Theorem: Any real m x n matrix A can be factored as A = U * Sigma * V^T, where U is an m x m orthogonal matrix, Sigma is m x n diagonal with singular values sigma_1 >= sigma_2 >= 0, and V is an n x n orthogonal matrix.'
+      },
+      {
+        id: 'res-9',
+        title: 'Full-Stack React & Node TypeScript Capstone Boilerplate',
+        subject: 'Computer Science',
+        category: 'Project Templates',
+        course: 'CS 194',
+        term: 'Fall 2026',
+        format: 'ZIP',
+        size: '12.4 MB',
+        downloads: 710,
+        tags: ['react', 'node', 'tailwind', 'express', 'postgresql'],
+        description: 'Production-ready starter repository complete with JWT auth, Tailwind CSS v4, Prisma schema, Vitest setup, and Docker compose files.',
+        author: 'CS Engineering Guild',
+        previewExcerpt: 'Root structure:\n├── src/\n│   ├── components/\n│   ├── hooks/\n│   └── lib/api.ts\n├── server/\n│   ├── routes/\n│   └── middleware/\n└── docker-compose.yml'
+      },
+      {
+        id: 'res-10',
+        title: 'Molecular Cell Biology & Metabolic Pathways Summary',
+        subject: 'Physics',
+        category: 'Study Guides',
+        course: 'BIO 105',
+        term: 'Spring 2026',
+        format: 'PDF',
+        size: '6.3 MB',
+        downloads: 215,
+        tags: ['glycolysis', 'krebs-cycle', 'atp-synthase', 'membrane-transport'],
+        description: 'Full-color biochemical pathway flowcharts detailing net ATP yields, allosteric enzyme regulation, and electron transport chains.',
+        author: 'Cell Biology Department',
+        previewExcerpt: 'Glycolysis yields a net 2 ATP and 2 NADH per glucose molecule before pyruvate dehydrogenase oxidizes pyruvate into Acetyl-CoA within the mitochondrial matrix.'
+      }
+    ];
+
+    const INITIAL_TASKS = [
+      {
+        id: 'task-1',
+        title: 'CS 229: Implement Multi-Head Attention from scratch',
+        course: 'CS 229',
+        priority: 'High',
+        dueDate: 'Tomorrow',
+        status: 'in_progress',
+        notes: 'Verify numerical stability of softmax and test scaled dot-product unit tests.'
+      },
+      {
+        id: 'task-2',
+        title: 'MATH 301: Problem Set 6 - Surface Integrals',
+        course: 'MATH 301',
+        priority: 'High',
+        dueDate: 'Nov 12, 2026',
+        status: 'todo',
+        notes: 'Problems 14 through 28 in chapter 16. Stokes theorem application proofs.'
+      },
+      {
+        id: 'task-3',
+        title: 'PHYS 210: Lab 4 Wavepacket Simulation Writeup',
+        course: 'PHYS 210',
+        priority: 'Medium',
+        dueDate: 'Nov 15, 2026',
+        status: 'todo',
+        notes: 'Include plots of time evolution of Gaussian wavepacket in quadratic potential.'
+      },
+      {
+        id: 'task-4',
+        title: 'LIT 142: Draft 1500-word Essay on Modernist Allusion',
+        course: 'LIT 142',
+        priority: 'Medium',
+        dueDate: 'Nov 18, 2026',
+        status: 'in_progress',
+        notes: 'Focus on T.S. Eliot and mythic method vs modern realism.'
+      },
+      {
+        id: 'task-5',
+        title: 'CS 161: Midterm Practice Exam 1 Review',
+        course: 'CS 161',
+        priority: 'Low',
+        dueDate: 'Completed',
+        status: 'completed',
+        notes: 'Scored 94/100. Review DP interval knapsack and SCC Tarjan algorithm.'
+      },
+      {
+        id: 'task-6',
+        title: 'STATS 270: Quiz 3 Bayesian Conjugate Priors',
+        course: 'STATS 270',
+        priority: 'Low',
+        dueDate: 'Completed',
+        status: 'completed',
+        notes: 'Beta-Binomial and Gamma-Poisson conjugate derivation.'
+      }
+    ];
+
+    const INITIAL_COURSES = [
+      { id: 'c-1', name: 'CS 229: Machine Learning', credits: 4, grade: 'A' },
+      { id: 'c-2', name: 'MATH 301: Advanced Vector Calculus', credits: 4, grade: 'A-' },
+      { id: 'c-3', name: 'CS 161: Design and Analysis of Algorithms', credits: 4, grade: 'A' },
+      { id: 'c-4', name: 'PHYS 210: Quantum Mechanics I', credits: 4, grade: 'B+' }
+    ];
+
+    const GRADE_POINTS = {
+      'A+': 4.0,
+      'A': 4.0,
+      'A-': 3.7,
+      'B+': 3.3,
+      'B': 3.0,
+      'B-': 2.7,
+      'C+': 2.3,
+      'C': 2.0,
+      'C-': 1.7,
+      'D': 1.0,
+      'F': 0.0
+    };
+
+    // State container
+    const state = {
+      resources: [],
+      bookmarks: new Set(),
+      tasks: [],
+      courses: [],
+      categoryFilter: 'All',
+      subjectFilter: 'All',
+      searchQuery: '',
+      showBookmarksOnly: false,
+      sortBy: 'newest',
+      currentPreviewId: null,
+      
+      // Timer state
+      timerMode: 'study', // 'study', 'shortBreak', 'longBreak'
+      timerTotalSeconds: 25 * 60,
+      timerSecondsLeft: 25 * 60,
+      timerInterval: null,
+      timerIsRunning: false,
+      sessionsCompletedToday: 2,
+      totalFocusMinutesToday: 50,
+      customStudyMin: 25,
+      customShortMin: 5,
+      customLongMin: 15,
+      
+      // Drag state
+      draggedTaskId: null
+    };
+
+    /* =========================================================================
+       2. INITIALIZATION & LOCAL STORAGE PERSISTENCE
+       ========================================================================= */
+
+    function initState() {
+      // Load Theme
+      const savedTheme = localStorage.getItem('srh_theme') || 'light';
+      applyTheme(savedTheme);
+
+      // Load Resources
+      const savedResources = localStorage.getItem('srh_resources');
+      state.resources = savedResources ? JSON.parse(savedResources) : INITIAL_RESOURCES;
+
+      // Load Bookmarks
+      const savedBookmarks = localStorage.getItem('srh_bookmarks');
+      state.bookmarks = savedBookmarks ? new Set(JSON.parse(savedBookmarks)) : new Set(['res-1', 'res-3']);
+
+      // Load Tasks
+      const savedTasks = localStorage.getItem('srh_tasks');
+      state.tasks = savedTasks ? JSON.parse(savedTasks) : INITIAL_TASKS;
+
+      // Load Courses
+      const savedCourses = localStorage.getItem('srh_courses');
+      state.courses = savedCourses ? JSON.parse(savedCourses) : INITIAL_COURSES;
+
+      // Load Timer Stats
+      const savedTimerStats = localStorage.getItem('srh_timer_stats');
+      if (savedTimerStats) {
+        try {
+          const stats = JSON.parse(savedTimerStats);
+          state.sessionsCompletedToday = stats.sessions || 2;
+          state.totalFocusMinutesToday = stats.minutes || 50;
+        } catch(e) {}
+      }
+
+      // Render all views
+      renderResources();
+      renderTasks();
+      renderGpa();
+      updateTimerDisplay();
+      updateTimerBadges();
+      calculateTargetForecast();
+
+      // Initialize Lucide icons
+      refreshIcons();
+    }
+
+    function saveState() {
+      localStorage.setItem('srh_resources', JSON.stringify(state.resources));
+      localStorage.setItem('srh_bookmarks', JSON.stringify(Array.from(state.bookmarks)));
+      localStorage.setItem('srh_tasks', JSON.stringify(state.tasks));
+      localStorage.setItem('srh_courses', JSON.stringify(state.courses));
+      localStorage.setItem('srh_timer_stats', JSON.stringify({
+        sessions: state.sessionsCompletedToday,
+        minutes: state.totalFocusMinutesToday
+      }));
+    }
+
+    function refreshIcons() {
+      if (window.lucide && typeof lucide.createIcons === 'function') {
+        lucide.createIcons();
+      }
+    }
+
+    /* =========================================================================
+       3. THEME SYSTEM (LIGHT / DARK)
+       ========================================================================= */
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.contains('dark');
+      const newTheme = isDark ? 'light' : 'dark';
+      applyTheme(newTheme);
+      showToast(`Switched to ${newTheme} mode`, 'info');
+    }
+
+    function applyTheme(theme) {
+      const icon = document.getElementById('theme-icon');
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+        if (icon) icon.setAttribute('data-lucide', 'sun');
+      } else {
+        document.documentElement.classList.add('light');
+        document.documentElement.classList.remove('dark');
+        if (icon) icon.setAttribute('data-lucide', 'moon');
+      }
+      localStorage.setItem('srh_theme', theme);
+      refreshIcons();
+    }
+
+    /* =========================================================================
+       4. TAB NAVIGATION & MOBILE SIDEBAR
+       ========================================================================= */
+
+    function switchTab(tabId) {
+      const tabs = ['repository', 'timer', 'gpa', 'planner'];
+      tabs.forEach(t => {
+        const view = document.getElementById(`view-${t}`);
+        const navBtn = document.getElementById(`nav-${t}`);
+        if (view) view.classList.add('hidden');
+        if (navBtn) {
+          navBtn.classList.remove('bg-indigo-50', 'dark:bg-indigo-950/50', 'text-indigo-600', 'dark:text-indigo-400');
+          navBtn.classList.add('text-slate-600', 'dark:text-slate-300');
+        }
+      });
+
+      const activeView = document.getElementById(`view-${tabId}`);
+      const activeNav = document.getElementById(`nav-${tabId}`);
+      if (activeView) activeView.classList.remove('hidden');
+      if (activeNav) {
+        activeNav.classList.add('bg-indigo-50', 'dark:bg-indigo-950/50', 'text-indigo-600', 'dark:text-indigo-400');
+        activeNav.classList.remove('text-slate-600', 'dark:text-slate-300');
+      }
+
+      // Update titles
+      const titles = {
+        repository: { title: 'Resource Repository', subtitle: 'Search, preview, and download verified study materials' },
+        timer: { title: 'Pomodoro Focus Timer', subtitle: 'Targeted study intervals, session counts, and rest breaks' },
+        gpa: { title: 'GPA & Grade Calculator', subtitle: 'Live cumulative grade points, credits, and target honors forecast' },
+        planner: { title: 'Assignment Kanban Planner', subtitle: 'Track problem sets, reading milestones, and project deadlines' }
+      };
+
+      if (titles[tabId]) {
+        document.getElementById('page-title').textContent = titles[tabId].title;
+        document.getElementById('page-subtitle').textContent = titles[tabId].subtitle;
+      }
+
+      // Close mobile sidebar if open
+      closeMobileSidebar();
+      refreshIcons();
+    }
+
+    function toggleMobileSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('mobileSidebarBackdrop');
+      if (sidebar.classList.contains('-translate-x-full')) {
+        sidebar.classList.remove('-translate-x-full');
+        backdrop.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+      }
+    }
+
+    function closeMobileSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('mobileSidebarBackdrop');
+      if (sidebar) sidebar.classList.add('-translate-x-full');
+      if (backdrop) backdrop.classList.add('hidden');
+    }
+
+    function filterByBookmarks() {
+      switchTab('repository');
+      state.showBookmarksOnly = true;
+      const btn = document.getElementById('btn-toggle-bookmarks-only');
+      if (btn) {
+        btn.classList.add('bg-amber-500', 'text-white', 'border-amber-500');
+        btn.classList.remove('text-slate-600', 'dark:text-slate-300');
+      }
+      renderResources();
+      showToast('Showing your bookmarked study materials', 'info');
+    }
+
+    /* =========================================================================
+       5. RESOURCE REPOSITORY LOGIC
+       ========================================================================= */
+
+    function handleGlobalSearch(query) {
+      state.searchQuery = query.trim().toLowerCase();
+      // If currently on another tab, switch to repository
+      const repoView = document.getElementById('view-repository');
+      if (repoView && repoView.classList.contains('hidden')) {
+        switchTab('repository');
+      }
+      renderResources();
+    }
+
+    function setCategoryFilter(category) {
+      state.categoryFilter = category;
+      document.querySelectorAll('.cat-pill').forEach(btn => {
+        if (btn.textContent.trim().toLowerCase() === category.toLowerCase() || 
+           (category === 'All' && btn.textContent.includes('All Formats')) ||
+           (category === 'Past Exam Papers' && btn.textContent.includes('Past Exams')) ||
+           (category === 'Code Repositories' && btn.textContent.includes('Code Repos'))) {
+          btn.classList.add('bg-indigo-600', 'text-white');
+          btn.classList.remove('text-slate-600', 'dark:text-slate-400');
+        } else {
+          btn.classList.remove('bg-indigo-600', 'text-white');
+          btn.classList.add('text-slate-600', 'dark:text-slate-400');
+        }
+      });
+      renderResources();
+    }
+
+    function setSubjectFilter(subject) {
+      state.subjectFilter = subject;
+      document.querySelectorAll('.subj-pill').forEach(btn => {
+        if (btn.textContent.trim().toLowerCase() === subject.toLowerCase()) {
+          btn.classList.add('bg-slate-900', 'text-white', 'dark:bg-white', 'dark:text-slate-900');
+          btn.classList.remove('text-slate-600', 'dark:text-slate-400');
+        } else {
+          btn.classList.remove('bg-slate-900', 'text-white', 'dark:bg-white', 'dark:text-slate-900');
+          btn.classList.add('text-slate-600', 'dark:text-slate-400');
+        }
+      });
+      renderResources();
+    }
+
+    function toggleBookmarkFilter() {
+      state.showBookmarksOnly = !state.showBookmarksOnly;
+      const btn = document.getElementById('btn-toggle-bookmarks-only');
+      if (btn) {
+        if (state.showBookmarksOnly) {
+          btn.classList.add('bg-amber-500', 'text-white', 'border-amber-500');
+          btn.classList.remove('text-slate-600', 'dark:text-slate-300');
+        } else {
+          btn.classList.remove('bg-amber-500', 'text-white', 'border-amber-500');
+          btn.classList.add('text-slate-600', 'dark:text-slate-300');
+        }
+      }
+      renderResources();
+    }
+
+    function resetFilters() {
+      state.categoryFilter = 'All';
+      state.subjectFilter = 'All';
+      state.searchQuery = '';
+      state.showBookmarksOnly = false;
+      const searchInput = document.getElementById('global-search');
+      if (searchInput) searchInput.value = '';
+      setCategoryFilter('All');
+      setSubjectFilter('All');
+      const btn = document.getElementById('btn-toggle-bookmarks-only');
+      if (btn) {
+        btn.classList.remove('bg-amber-500', 'text-white', 'border-amber-500');
+        btn.classList.add('text-slate-600', 'dark:text-slate-300');
+      }
+      renderResources();
+    }
+
+    function renderResources() {
+      const grid = document.getElementById('resource-cards-grid');
+      const emptyState = document.getElementById('resource-empty-state');
+      const sortSelect = document.getElementById('sort-select');
+      const sortBy = sortSelect ? sortSelect.value : 'newest';
+
+      // Filter
+      let filtered = state.resources.filter(res => {
+        // Category
+        if (state.categoryFilter !== 'All' && res.category !== state.categoryFilter) return false;
+        // Subject
+        if (state.subjectFilter !== 'All' && res.subject !== state.subjectFilter) return false;
+        // Bookmarks
+        if (state.showBookmarksOnly && !state.bookmarks.has(res.id)) return false;
+        // Search query
+        if (state.searchQuery) {
+          const q = state.searchQuery;
+          const matchTitle = res.title.toLowerCase().includes(q);
+          const matchCourse = res.course.toLowerCase().includes(q);
+          const matchDesc = res.description.toLowerCase().includes(q);
+          const matchTags = res.tags.some(t => t.toLowerCase().includes(q));
+          if (!matchTitle && !matchCourse && !matchDesc && !matchTags) return false;
+        }
+        return true;
+      });
+
+      // Sort
+      if (sortBy === 'popular') {
+        filtered.sort((a, b) => b.downloads - a.downloads);
+      } else if (sortBy === 'title') {
+        filtered.sort((a, b) => a.title.localeCompare(b.title));
+      }
+
+      // Update counters
+      const countBadge = document.getElementById('badge-resource-count');
+      if (countBadge) countBadge.textContent = state.resources.length;
+      const bookmarkBadge = document.getElementById('badge-bookmark-count');
+      if (bookmarkBadge) bookmarkBadge.textContent = state.bookmarks.size;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      // Generate HTML for cards
+      grid.innerHTML = filtered.map(res => {
+        const isBookmarked = state.bookmarks.has(res.id);
+        const formatIcon = getFormatIcon(res.format);
+
+        return `
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between group">
+            
+            <div>
+              <!-- Card Meta Line: Format Icon + Subject + Course -->
+              <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-2.5">
+                <div class="flex items-center gap-2">
+                  <span class="inline-flex items-center gap-1 font-mono text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                    <i data-lucide="${formatIcon}" class="w-3.5 h-3.5 text-indigo-500"></i>
+                    ${res.format}
+                  </span>
+                  <span>${res.course}</span>
+                  <span aria-hidden="true">·</span>
+                  <span class="truncate max-w-[110px]">${res.subject}</span>
+                </div>
+
+                <!-- 1-Click Bookmark Action -->
+                <button onclick="toggleBookmark('${res.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="${isBookmarked ? 'Remove Bookmark' : 'Save to Bookmarks'}">
+                  <i data-lucide="bookmark" class="w-4 h-4 ${isBookmarked ? 'fill-amber-400 text-amber-500' : ''}"></i>
+                </button>
+              </div>
+
+              <!-- Title -->
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white line-clamp-2 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-2">
+                ${res.title}
+              </h3>
+
+              <!-- Description -->
+              <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-3 leading-relaxed">
+                ${res.description}
+              </p>
+
+              <!-- Tags (Clean typography with subtle bullet separators) -->
+              <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-400 font-mono mb-4">
+                ${res.tags.slice(0, 3).map(tag => `<span>#${tag}</span>`).join('<span class="text-slate-300 dark:text-slate-400">·</span>')}
+              </div>
+            </div>
+
+            <!-- Card Footer: Meta Info & Actions -->
+            <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-3 text-slate-400 dark:text-slate-400 text-[11px] font-mono">
+                <span>${res.size}</span>
+                <span class="flex items-center gap-1">
+                  <i data-lucide="arrow-down" class="w-3 h-3"></i>
+                  ${res.downloads}
+                </span>
+              </div>
+
+              <div class="flex items-center gap-1.5">
+                <button onclick="openPreviewModal('${res.id}')" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium transition-colors">
+                  Preview
+                </button>
+                <button onclick="simulateDownload('${res.id}')" class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium shadow-2xs transition-colors flex items-center gap-1">
+                  <i data-lucide="download" class="w-3 h-3"></i>
+                  <span>Get</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+
+      refreshIcons();
+    }
+
+    function getFormatIcon(format) {
+      switch(format) {
+        case 'PDF': return 'file-text';
+        case 'MD': return 'file-code';
+        case 'ZIP': return 'archive';
+        case 'DOCX': return 'file-text';
+        case 'IPYNB': return 'binary';
+        default: return 'file';
+      }
+    }
+
+    function toggleBookmark(resId) {
+      if (state.bookmarks.has(resId)) {
+        state.bookmarks.delete(resId);
+        showToast('Removed from saved bookmarks', 'info');
+      } else {
+        state.bookmarks.add(resId);
+        showToast('Resource bookmarked successfully!', 'success');
+      }
+      saveState();
+      renderResources();
+    }
+
+    function simulateDownload(resId) {
+      const res = state.resources.find(r => r.id === resId);
+      if (!res) return;
+
+      res.downloads = (res.downloads || 0) + 1;
+      saveState();
+      renderResources();
+
+      // Create an authentic text blob for download simulation
+      const content = `========================================================\nSCHOLARHUB ACADEMIC WORKSPACE\n========================================================\nTitle: ${res.title}\nCourse: ${res.course} (${res.subject})\nCategory: ${res.category} | Term: ${res.term}\nAuthor: ${res.author}\nFile Format: ${res.format} (${res.size})\n\nDESCRIPTION:\n${res.description}\n\nTAGS: ${res.tags.join(', ')}\n\nEXCERPT & STUDY NOTES:\n${res.previewExcerpt}\n\nDownloaded via ScholarHub on ${new Date().toLocaleDateString()}.\n========================================================`;
+      
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${res.course.replace(/\s+/g, '_')}_${res.title.replace(/[^a-zA-Z0-9]/g, '_')}.${res.format.toLowerCase() === 'pdf' ? 'txt' : res.format.toLowerCase()}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showToast(`Downloading "${res.title}" (${res.size})`, 'success');
+    }
+
+    /* =========================================================================
+       6. PREVIEW MODAL LOGIC
+       ========================================================================= */
+
+    function openPreviewModal(resId) {
+      const res = state.resources.find(r => r.id === resId);
+      if (!res) return;
+
+      state.currentPreviewId = resId;
+
+      document.getElementById('preview-title').textContent = res.title;
+      document.getElementById('preview-meta').innerHTML = `
+        <span>${res.course}</span> · <span>${res.category}</span> · <span>${res.format} (${res.size})</span> · <span>${res.term}</span>
+      `;
+
+      const contentBox = document.getElementById('preview-content-box');
+      contentBox.innerHTML = `
+        <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800">
+          <span class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Course Syllabus & Description</span>
+          <p class="text-xs text-slate-500 mt-1">${res.description}</p>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Document Summary Excerpt</h4>
+          <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-mono p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800">
+            ${res.previewExcerpt}
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 text-xs pt-1">
+          <div class="p-3 rounded-lg border border-slate-100 dark:border-slate-800">
+            <span class="text-slate-400 block text-[11px]">Instructor / Contributors</span>
+            <span class="font-medium text-slate-800 dark:text-slate-200">${res.author}</span>
+          </div>
+          <div class="p-3 rounded-lg border border-slate-100 dark:border-slate-800">
+            <span class="text-slate-400 block text-[11px]">Associated Topic Keywords</span>
+            <span class="font-medium text-slate-800 dark:text-slate-200">${res.tags.join(', ')}</span>
+          </div>
+        </div>
+      `;
+
+      // Update Bookmark button label in preview
+      const isBookmarked = state.bookmarks.has(res.id);
+      const bookmarkBtn = document.getElementById('preview-btn-bookmark');
+      if (bookmarkBtn) {
+        bookmarkBtn.innerHTML = `
+          <i data-lucide="bookmark" class="w-4 h-4 ${isBookmarked ? 'fill-amber-400 text-amber-500' : ''}"></i>
+          <span>${isBookmarked ? 'Bookmarked' : 'Bookmark'}</span>
+        `;
+      }
+
+      document.getElementById('modal-preview').classList.remove('hidden');
+      refreshIcons();
+    }
+
+    function closePreviewModal() {
+      document.getElementById('modal-preview').classList.add('hidden');
+      state.currentPreviewId = null;
+    }
+
+    function toggleBookmarkFromPreview() {
+      if (state.currentPreviewId) {
+        toggleBookmark(state.currentPreviewId);
+        openPreviewModal(state.currentPreviewId); // re-render preview modal button
+      }
+    }
+
+    function downloadCurrentPreviewResource() {
+      if (state.currentPreviewId) {
+        simulateDownload(state.currentPreviewId);
+        closePreviewModal();
+      }
+    }
+
+    /* =========================================================================
+       7. UPLOAD SIMULATOR LOGIC
+       ========================================================================= */
+
+    function openUploadModal() {
+      document.getElementById('modal-upload').classList.remove('hidden');
+    }
+
+    function closeUploadModal() {
+      document.getElementById('modal-upload').classList.add('hidden');
+      document.getElementById('upload-form').reset();
+      resetDropZone();
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      document.getElementById('drop-zone').classList.add('border-indigo-600', 'bg-indigo-50/50', 'dark:bg-indigo-950/20');
+    }
+
+    function handleDragLeave(e) {
+      e.preventDefault();
+      document.getElementById('drop-zone').classList.remove('border-indigo-600', 'bg-indigo-50/50', 'dark:bg-indigo-950/20');
+    }
+
+    function handleDropFile(e) {
+      e.preventDefault();
+      document.getElementById('drop-zone').classList.remove('border-indigo-600', 'bg-indigo-50/50', 'dark:bg-indigo-950/20');
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        displaySelectedFile(file);
+      }
+    }
+
+    function handleFileSelect(e) {
+      if (e.target.files && e.target.files.length > 0) {
+        const file = e.target.files[0];
+        displaySelectedFile(file);
+      }
+    }
+
+    function displaySelectedFile(file) {
+      const dropZoneText = document.getElementById('drop-zone-text');
+      const dropZoneSubtext = document.getElementById('drop-zone-subtext');
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      dropZoneText.textContent = `Attached: ${file.name}`;
+      dropZoneSubtext.textContent = `Size: ${sizeMb} MB · Ready to upload`;
+
+      // Auto-populate title if empty
+      const titleInput = document.getElementById('up-title');
+      if (titleInput && !titleInput.value) {
+        const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+        titleInput.value = cleanName;
+      }
+    }
+
+    function resetDropZone() {
+      document.getElementById('drop-zone-text').textContent = 'Click to upload or drag & drop files here';
+      document.getElementById('drop-zone-subtext').textContent = 'PDF, DOCX, ZIP, IPYNB, or MD (up to 50 MB)';
+    }
+
+    function handleUploadSubmit(e) {
+      e.preventDefault();
+
+      const title = document.getElementById('up-title').value.trim();
+      const subject = document.getElementById('up-subject').value;
+      const category = document.getElementById('up-category').value;
+      const course = document.getElementById('up-course').value.trim();
+      const term = document.getElementById('up-term').value.trim() || 'Fall 2026';
+      const tagsStr = document.getElementById('up-tags').value.trim();
+      const desc = document.getElementById('up-desc').value.trim() || 'Comprehensive course notes and review reference provided by student.';
+
+      const tags = tagsStr ? tagsStr.split(',').map(t => t.trim().toLowerCase()) : ['study-notes', course.toLowerCase()];
+
+      const newResource = {
+        id: 'res-' + Date.now(),
+        title,
+        subject,
+        category,
+        course,
+        term,
+        format: category === 'Code Repositories' ? 'ZIP' : 'PDF',
+        size: '3.2 MB',
+        downloads: 1,
+        tags,
+        description: desc,
+        author: 'Alex Chen (You)',
+        previewExcerpt: `Uploaded Document: ${title}\nCourse: ${course} (${term})\nContributed by verified student. Summary overview of core theorems, assignments, and problem sets.`
+      };
+
+      state.resources.unshift(newResource);
+      saveState();
+      renderResources();
+      closeUploadModal();
+      showToast('Resource uploaded and published to live view!', 'success');
+    }
+
+    /* =========================================================================
+       8. POMODORO FOCUS TIMER LOGIC
+       ========================================================================= */
+
+    function setTimerMode(mode) {
+      if (state.timerInterval) {
+        clearInterval(state.timerInterval);
+        state.timerInterval = null;
+        state.timerIsRunning = false;
+      }
+
+      state.timerMode = mode;
+      
+      let minutes = 25;
+      if (mode === 'study') minutes = state.customStudyMin;
+      else if (mode === 'shortBreak') minutes = state.customShortMin;
+      else if (mode === 'longBreak') minutes = state.customLongMin;
+
+      state.timerTotalSeconds = minutes * 60;
+      state.timerSecondsLeft = minutes * 60;
+
+      // Update pill active classes
+      ['study', 'shortBreak', 'longBreak'].forEach(m => {
+        const btn = document.getElementById(`tmode-${m}`);
+        if (m === mode) {
+          btn.className = 'px-4 py-1.5 rounded-lg transition-all bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs';
+        } else {
+          btn.className = 'px-4 py-1.5 rounded-lg transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white';
+        }
+      });
+
+      const label = document.getElementById('timer-mode-label');
+      if (label) {
+        if (mode === 'study') label.textContent = 'Deep Work';
+        else if (mode === 'shortBreak') label.textContent = 'Short Rest';
+        else label.textContent = 'Long Rest';
+      }
+
+      updateTimerDisplay();
+      updatePlayButtonUI();
+    }
+
+    function toggleTimer() {
+      if (state.timerIsRunning) {
+        // Pause
+        clearInterval(state.timerInterval);
+        state.timerInterval = null;
+        state.timerIsRunning = false;
+        showToast('Timer paused', 'info');
+      } else {
+        // Start
+        state.timerIsRunning = true;
+        state.timerInterval = setInterval(tickTimer, 1000);
+        showToast('Focus session started', 'success');
+      }
+      updatePlayButtonUI();
+    }
+
+    function tickTimer() {
+      if (state.timerSecondsLeft > 0) {
+        state.timerSecondsLeft--;
+        updateTimerDisplay();
+      } else {
+        // Timer Completed
+        clearInterval(state.timerInterval);
+        state.timerInterval = null;
+        state.timerIsRunning = false;
+        
+        playChimeSound();
+
+        if (state.timerMode === 'study') {
+          state.sessionsCompletedToday++;
+          state.totalFocusMinutesToday += state.customStudyMin;
+          saveState();
+          updateTimerBadges();
+          showToast('🎉 Focus session completed! Great job. Time for a break.', 'success');
+          setTimerMode('shortBreak');
+        } else {
+          showToast('Break finished! Ready to focus again?', 'info');
+          setTimerMode('study');
+        }
+        updatePlayButtonUI();
+      }
+    }
+
+    function resetTimer() {
+      if (state.timerInterval) {
+        clearInterval(state.timerInterval);
+        state.timerInterval = null;
+        state.timerIsRunning = false;
+      }
+      setTimerMode(state.timerMode);
+      showToast('Timer reset', 'info');
+    }
+
+    function skipTimerMode() {
+      if (state.timerMode === 'study') {
+        setTimerMode('shortBreak');
+      } else {
+        setTimerMode('study');
+      }
+    }
+
+    function updateTimerDisplay() {
+      const minutes = Math.floor(state.timerSecondsLeft / 60);
+      const seconds = state.timerSecondsLeft % 60;
+      const formatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      
+      const display = document.getElementById('timer-display');
+      if (display) display.textContent = formatted;
+
+      const badgeStatus = document.getElementById('badge-timer-status');
+      if (badgeStatus) badgeStatus.textContent = formatted;
+
+      // Update SVG Ring progress
+      const circle = document.getElementById('timer-progress-circle');
+      if (circle) {
+        const circumference = 2 * Math.PI * 44; // ~276.46
+        const progress = (state.timerTotalSeconds - state.timerSecondsLeft) / state.timerTotalSeconds;
+        const offset = circumference * (1 - progress);
+        circle.style.strokeDashoffset = offset;
+      }
+    }
+
+    function updatePlayButtonUI() {
+      const btnIcon = document.getElementById('btn-timer-toggle-icon');
+      const btnText = document.getElementById('btn-timer-toggle-text');
+      const btn = document.getElementById('btn-timer-toggle');
+
+      if (state.timerIsRunning) {
+        btnText.textContent = 'Pause';
+        btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+        btn.classList.add('bg-amber-600', 'hover:bg-amber-700');
+        if (btnIcon) btnIcon.setAttribute('data-lucide', 'pause');
+      } else {
+        btnText.textContent = 'Start Focus';
+        btn.classList.remove('bg-amber-600', 'hover:bg-amber-700');
+        btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+        if (btnIcon) btnIcon.setAttribute('data-lucide', 'play');
+      }
+      refreshIcons();
+    }
+
+    function updateCustomTimes() {
+      const studyInput = document.getElementById('custom-study-min');
+      const shortInput = document.getElementById('custom-short-min');
+      const longInput = document.getElementById('custom-long-min');
+
+      state.customStudyMin = parseInt(studyInput.value) || 25;
+      state.customShortMin = parseInt(shortInput.value) || 5;
+      state.customLongMin = parseInt(longInput.value) || 15;
+
+      setTimerMode(state.timerMode);
+      showToast('Custom timer durations updated', 'info');
+    }
+
+    function updateTimerBadges() {
+      const sessElem = document.getElementById('stat-sessions-count');
+      const minElem = document.getElementById('stat-focus-minutes');
+      const sideStats = document.getElementById('sidebar-focus-stats');
+      const sideBar = document.getElementById('sidebar-focus-bar');
+
+      if (sessElem) sessElem.textContent = state.sessionsCompletedToday;
+      if (minElem) minElem.textContent = state.totalFocusMinutesToday;
+      if (sideStats) sideStats.textContent = `${state.sessionsCompletedToday} / 4`;
+      if (sideBar) {
+        const pct = Math.min(100, Math.round((state.sessionsCompletedToday / 4) * 100));
+        sideBar.style.width = `${pct}%`;
+      }
+    }
+
+    // Web Audio API Synthesized Chime (Zero external audio dependency)
+    function playChimeSound() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+
+        const now = ctx.currentTime;
+        // First tone (E5 ~ 659.25Hz)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(659.25, now);
+        gain1.gain.setValueAtTime(0.3, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.8);
+
+        // Second tone (A5 ~ 880Hz)
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(880.0, now + 0.25);
+        gain2.gain.setValueAtTime(0.35, now + 0.25);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.25);
+        osc2.stop(now + 1.2);
+      } catch(e) {
+        console.warn('Audio chime failed:', e);
+      }
+    }
+
+    function testChimeSound() {
+      playChimeSound();
+      showToast('Bell chime played', 'info');
+    }
+
+    /* =========================================================================
+       9. GPA / GRADE CALCULATOR LOGIC
+       ========================================================================= */
+
+    function renderGpa() {
+      const tbody = document.getElementById('gpa-table-body');
+      if (!tbody) return;
+
+      tbody.innerHTML = state.courses.map((c, idx) => {
+        return `
+          <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+            <td class="py-2.5 px-2">
+              <input type="text" value="${c.name}" onchange="updateCourseName('${c.id}', this.value)" class="w-full bg-transparent border-b border-transparent hover:border-slate-300 dark:hover:border-slate-700 focus:border-indigo-500 py-1 font-medium text-slate-800 dark:text-slate-200 outline-none text-xs">
+            </td>
+            <td class="py-2.5 px-2">
+              <input type="number" min="1" max="10" step="0.5" value="${c.credits}" onchange="updateCourseCredits('${c.id}', this.value)" class="w-20 px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-center font-mono text-xs">
+            </td>
+            <td class="py-2.5 px-2">
+              <select onchange="updateCourseGrade('${c.id}', this.value)" class="w-28 px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded font-mono text-xs outline-none">
+                ${Object.keys(GRADE_POINTS).map(g => `<option value="${g}" ${c.grade === g ? 'selected' : ''}>${g} (${GRADE_POINTS[g].toFixed(1)})</option>`).join('')}
+              </select>
+            </td>
+            <td class="py-2.5 px-2 text-right font-mono font-semibold text-slate-700 dark:text-slate-300">
+              ${(c.credits * (GRADE_POINTS[c.grade] || 0)).toFixed(1)}
+            </td>
+            <td class="py-2.5 px-2 text-center">
+              <button onclick="deleteCourseRow('${c.id}')" class="p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors" title="Remove course">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      calculateGpaMetrics();
+      refreshIcons();
+    }
+
+    function calculateGpaMetrics() {
+      let totalCredits = 0;
+      let totalPoints = 0;
+
+      state.courses.forEach(c => {
+        const credits = parseFloat(c.credits) || 0;
+        const pts = GRADE_POINTS[c.grade] !== undefined ? GRADE_POINTS[c.grade] : 0;
+        totalCredits += credits;
+        totalPoints += credits * pts;
+      });
+
+      const gpa = totalCredits > 0 ? (totalPoints / totalCredits) : 0;
+      const gpaFormatted = gpa.toFixed(2);
+
+      document.getElementById('gpa-summary-val').textContent = gpaFormatted;
+      document.getElementById('gpa-total-credits').textContent = totalCredits.toFixed(1);
+      document.getElementById('gpa-total-points').textContent = totalPoints.toFixed(1);
+
+      const badgeGpa = document.getElementById('badge-gpa-val');
+      if (badgeGpa) badgeGpa.textContent = gpaFormatted;
+
+      const standingElem = document.getElementById('gpa-standing-label');
+      if (standingElem) {
+        if (gpa >= 3.8) {
+          standingElem.textContent = 'Summa Cum Laude · Highest Honors';
+          standingElem.className = 'inline-block mt-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400';
+        } else if (gpa >= 3.5) {
+          standingElem.textContent = 'Magna Cum Laude · Dean\'s Honor List';
+          standingElem.className = 'inline-block mt-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400';
+        } else if (gpa >= 3.0) {
+          standingElem.textContent = 'Cum Laude · Good Standing';
+          standingElem.className = 'inline-block mt-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400';
+        } else {
+          standingElem.textContent = 'Academic Warning (< 3.00)';
+          standingElem.className = 'inline-block mt-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400';
+        }
+      }
+    }
+
+    function addCourseRow() {
+      const newCourse = {
+        id: 'c-' + Date.now(),
+        name: 'New Course Elective',
+        credits: 3,
+        grade: 'A'
+      };
+      state.courses.push(newCourse);
+      saveState();
+      renderGpa();
+      calculateTargetForecast();
+      showToast('Course row added', 'info');
+    }
+
+    function deleteCourseRow(courseId) {
+      if (state.courses.length <= 1) {
+        showToast('You must keep at least 1 course in the calculator', 'warning');
+        return;
+      }
+      state.courses = state.courses.filter(c => c.id !== courseId);
+      saveState();
+      renderGpa();
+      calculateTargetForecast();
+      showToast('Course removed', 'info');
+    }
+
+    function updateCourseName(id, val) {
+      const c = state.courses.find(item => item.id === id);
+      if (c) { c.name = val; saveState(); }
+    }
+
+    function updateCourseCredits(id, val) {
+      const c = state.courses.find(item => item.id === id);
+      if (c) {
+        c.credits = Math.max(1, parseFloat(val) || 1);
+        saveState();
+        renderGpa();
+        calculateTargetForecast();
+      }
+    }
+
+    function updateCourseGrade(id, val) {
+      const c = state.courses.find(item => item.id === id);
+      if (c) {
+        c.grade = val;
+        saveState();
+        renderGpa();
+        calculateTargetForecast();
+      }
+    }
+
+    function resetGpaCourses() {
+      state.courses = [...INITIAL_COURSES];
+      saveState();
+      renderGpa();
+      calculateTargetForecast();
+      showToast('Reset to default course catalog', 'info');
+    }
+
+    function calculateTargetForecast() {
+      const targetGpa = parseFloat(document.getElementById('target-desired-gpa').value) || 3.90;
+      const futureCredits = parseFloat(document.getElementById('target-future-credits').value) || 15;
+
+      let currentCredits = 0;
+      let currentPoints = 0;
+
+      state.courses.forEach(c => {
+        const credits = parseFloat(c.credits) || 0;
+        const pts = GRADE_POINTS[c.grade] !== undefined ? GRADE_POINTS[c.grade] : 0;
+        currentCredits += credits;
+        currentPoints += credits * pts;
+      });
+
+      const totalCombinedCredits = currentCredits + futureCredits;
+      const totalPointsNeeded = totalCombinedCredits * targetGpa;
+      const futurePointsNeeded = totalPointsNeeded - currentPoints;
+      const requiredGpa = futurePointsNeeded / futureCredits;
+
+      const reqDisplay = document.getElementById('target-required-gpa-val');
+      const noteDisplay = document.getElementById('target-forecast-note');
+
+      if (requiredGpa > 4.0) {
+        reqDisplay.textContent = requiredGpa.toFixed(2);
+        reqDisplay.className = 'font-mono text-2xl font-bold text-rose-600 dark:text-rose-400 tabular-nums';
+        noteDisplay.textContent = '⚠️ Mathematically impossible (> 4.00) in the upcoming credits alone.';
+      } else if (requiredGpa <= 0) {
+        reqDisplay.textContent = 'Achieved';
+        reqDisplay.className = 'font-mono text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums';
+        noteDisplay.textContent = 'Target already met with current academic standing!';
+      } else {
+        reqDisplay.textContent = requiredGpa.toFixed(2);
+        reqDisplay.className = 'font-mono text-2xl font-bold text-indigo-600 dark:text-indigo-400 tabular-nums';
+        noteDisplay.textContent = `Maintain an average of ${requiredGpa.toFixed(2)} grade points in your next ${futureCredits} credits.`;
+      }
+    }
+
+    /* =========================================================================
+       10. ASSIGNMENT KANBAN PLANNER LOGIC & DRAG AND DROP
+       ========================================================================= */
+
+    function renderTasks() {
+      const cols = {
+        todo: document.getElementById('col-tasks-todo'),
+        in_progress: document.getElementById('col-tasks-in_progress'),
+        completed: document.getElementById('col-tasks-completed')
+      };
+
+      const counts = { todo: 0, in_progress: 0, completed: 0 };
+
+      // Clear columns
+      Object.values(cols).forEach(col => col.innerHTML = '');
+
+      state.tasks.forEach(task => {
+        if (!cols[task.status]) task.status = 'todo';
+        counts[task.status]++;
+
+        const priorityColors = {
+          High: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-900',
+          Medium: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 border-amber-200 dark:border-amber-900',
+          Low: 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+        };
+
+        const isComplete = task.status === 'completed';
+
+        const card = document.createElement('div');
+        card.className = 'kanban-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-2xs hover:shadow-xs transition-all cursor-grab active:cursor-grabbing space-y-2.5';
+        card.draggable = true;
+        card.id = `card-${task.id}`;
+
+        card.ondragstart = (e) => onDragStart(e, task.id);
+        card.ondragend = (e) => onDragEnd(e);
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between text-[11px]">
+            <div class="flex items-center gap-1.5 font-mono">
+              <span class="font-bold text-indigo-600 dark:text-indigo-400">${task.course}</span>
+              <span class="text-slate-400">·</span>
+              <span class="px-2 py-0.5 rounded border text-[10px] font-semibold ${priorityColors[task.priority] || priorityColors.Medium}">
+                ${task.priority}
+              </span>
+            </div>
+
+            <!-- Quick Delete -->
+            <button onclick="deleteTask('${task.id}')" class="text-slate-400 hover:text-rose-500 transition-colors p-1" title="Delete Task">
+              <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <div class="flex items-start gap-2">
+            <input type="checkbox" ${isComplete ? 'checked' : ''} onchange="toggleTaskCompleted('${task.id}', this.checked)" class="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+            <p class="text-xs font-semibold leading-snug text-slate-900 dark:text-slate-100 ${isComplete ? 'line-through text-slate-400 dark:text-slate-400' : ''}">
+              ${task.title}
+            </p>
+          </div>
+
+          ${task.notes ? `<p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-tight">${task.notes}</p>` : ''}
+
+          <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/80 text-[11px] text-slate-400">
+            <span class="flex items-center gap-1">
+              <i data-lucide="clock" class="w-3 h-3 text-slate-400"></i>
+              ${task.dueDate}
+            </span>
+
+            <!-- Mobile / Touch Column Shift Buttons -->
+            <div class="flex items-center gap-1">
+              ${task.status !== 'todo' ? `
+                <button onclick="moveTask('${task.id}', -1)" class="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" title="Move Left">
+                  <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                </button>
+              ` : ''}
+              ${task.status !== 'completed' ? `
+                <button onclick="moveTask('${task.id}', 1)" class="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" title="Move Right">
+                  <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+
+        cols[task.status].appendChild(card);
+      });
+
+      // Update Column Count Badges
+      document.getElementById('col-count-todo').textContent = counts.todo;
+      document.getElementById('col-count-in_progress').textContent = counts.in_progress;
+      document.getElementById('col-count-completed').textContent = counts.completed;
+
+      // Update Sidebar Badge
+      const totalPending = counts.todo + counts.in_progress;
+      const tasksBadge = document.getElementById('badge-tasks-count');
+      if (tasksBadge) tasksBadge.textContent = totalPending;
+
+      // Update Kanban Progress Bar
+      const total = state.tasks.length;
+      const done = counts.completed;
+      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+      
+      const progBar = document.getElementById('kanban-progress-bar');
+      const progText = document.getElementById('kanban-progress-text');
+      if (progBar) progBar.style.width = `${pct}%`;
+      if (progText) progText.textContent = `${done} of ${total} completed (${pct}%)`;
+
+      refreshIcons();
+    }
+
+    /* Drag and drop HTML5 API */
+    function onDragStart(e, taskId) {
+      state.draggedTaskId = taskId;
+      const card = document.getElementById(`card-${taskId}`);
+      if (card) card.classList.add('is-dragging');
+      e.dataTransfer.setData('text/plain', taskId);
+      e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function onDragEnd(e) {
+      if (state.draggedTaskId) {
+        const card = document.getElementById(`card-${state.draggedTaskId}`);
+        if (card) card.classList.remove('is-dragging');
+        state.draggedTaskId = null;
+      }
+      document.querySelectorAll('.kanban-col').forEach(col => col.classList.remove('drag-over'));
+    }
+
+    function onDragOver(e) {
+      e.preventDefault();
+      e.currentTarget.classList.add('drag-over');
+      e.dataTransfer.dropEffect = 'move';
+    }
+
+    function onDragLeave(e) {
+      e.currentTarget.classList.remove('drag-over');
+    }
+
+    function onDrop(e, targetCol) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drag-over');
+      const taskId = e.dataTransfer.getData('text/plain') || state.draggedTaskId;
+      if (!taskId) return;
+
+      const task = state.tasks.find(t => t.id === taskId);
+      if (task && task.status !== targetCol) {
+        task.status = targetCol;
+        saveState();
+        renderTasks();
+        showToast(`Task moved to ${targetCol.replace('_', ' ').toUpperCase()}`, 'info');
+      }
+    }
+
+    function moveTask(taskId, direction) {
+      const task = state.tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      const order = ['todo', 'in_progress', 'completed'];
+      const currentIndex = order.indexOf(task.status);
+      const newIndex = currentIndex + direction;
+
+      if (newIndex >= 0 && newIndex < order.length) {
+        task.status = order[newIndex];
+        saveState();
+        renderTasks();
+      }
+    }
+
+    function toggleTaskCompleted(taskId, isChecked) {
+      const task = state.tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      task.status = isChecked ? 'completed' : 'todo';
+      saveState();
+      renderTasks();
+      showToast(isChecked ? 'Task marked as completed! 🎯' : 'Task restored to To-Do', 'success');
+    }
+
+    function deleteTask(taskId) {
+      state.tasks = state.tasks.filter(t => t.id !== taskId);
+      saveState();
+      renderTasks();
+      showToast('Assignment removed', 'info');
+    }
+
+    function openNewTaskModal() {
+      document.getElementById('modal-task').classList.remove('hidden');
+    }
+
+    function closeNewTaskModal() {
+      document.getElementById('modal-task').classList.add('hidden');
+      document.getElementById('task-form').reset();
+    }
+
+    function handleNewTaskSubmit(e) {
+      e.preventDefault();
+      const title = document.getElementById('task-input-title').value.trim();
+      const course = document.getElementById('task-input-course').value.trim();
+      const priority = document.getElementById('task-input-priority').value;
+      const dueDate = document.getElementById('task-input-date').value || 'Upcoming';
+      const status = document.getElementById('task-input-status').value;
+      const notes = document.getElementById('task-input-notes').value.trim();
+
+      const newTask = {
+        id: 'task-' + Date.now(),
+        title,
+        course,
+        priority,
+        dueDate,
+        status,
+        notes
+      };
+
+      state.tasks.unshift(newTask);
+      saveState();
+      renderTasks();
+      closeNewTaskModal();
+      showToast('New assignment added to board!', 'success');
+    }
+
+    /* =========================================================================
+       11. TOAST NOTIFICATION SYSTEM
+       ========================================================================= */
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      toast.className = 'toast-animate pointer-events-auto flex items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xl border border-slate-800 dark:border-slate-200 text-xs font-medium';
+
+      let iconHtml = '<i data-lucide="info" class="w-4 h-4 text-indigo-400 shrink-0"></i>';
+      if (type === 'success') {
+        iconHtml = '<i data-lucide="check-circle" class="w-4 h-4 text-emerald-400 shrink-0"></i>';
+      } else if (type === 'warning') {
+        iconHtml = '<i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400 shrink-0"></i>';
+      }
+
+      toast.innerHTML = `
+        <div class="flex items-center gap-2.5">
+          ${iconHtml}
+          <span>${message}</span>
+        </div>
+        <button onclick="this.parentElement.remove()" class="p-1 rounded text-slate-400 hover:text-white dark:hover:text-slate-900 transition-colors">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      `;
+
+      container.appendChild(toast);
+      refreshIcons();
+
+      setTimeout(() => {
+        if (toast && toast.parentElement) {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(12px) scale(0.95)';
+          toast.style.transition = 'all 0.2s ease-in';
+          setTimeout(() => toast.remove(), 200);
+        }
+      }, 3500);
+    }
+
+    // Keyboard shortcuts: ESC closes modals, '/' focuses search
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closePreviewModal();
+        closeUploadModal();
+        closeNewTaskModal();
+        closeMobileSidebar();
+      }
+      if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        const search = document.getElementById('global-search');
+        if (search) search.focus();
+      }
+    });
+
+    // Boot the application on DOM content loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      initState();
+    });
+  </script>
+
+</body>
+</html>
